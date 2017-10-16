@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Type Ahead 👀</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <form class="search-form">
+    <input type="text" class="search" placeholder="City or State">
+    <ul class="suggestions">
+      <li>Filter for a city</li>
+      <li>or a state</li>
+    </ul>
+  </form>
+<script>
+const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+
+const cities = [];
+
+fetch(endpoint)
+  .then(resp => resp.json())
+  .then(data => cities.push(...data));
+
+function findMatches(word, cities) {
+  const regex = new RegExp(word, 'gi');
+  return cities.filter(city => {
+    return city.city.match(regex) || city.state.match(regex);
+  });
+}
+
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function calcDistance(x1, y1, x2, y2) {
+  return Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+}
+
+function displayMatches() {
+  if (this.value === '') {
+    suggestions.innerHTML = '<li>Filter for a city</li><li>or a state</li>';
+    return
+  }
+
+  const matches = findMatches(this.value, cities);
+
+  let sortedMatches = matches
+  if (loc.lat !== 0 && loc.long !== 0) {
+    sortedMatches = matches.sort((a, b) => {
+      const dist1 = calcDistance(loc.lat, loc.long, a.latitude, a.longitude);
+      const dist2 = calcDistance(loc.lat, loc.long, b.latitude, b.longitude);
+      return dist1 > dist2 ? 1 : -1;
+    });
+  }
+
+  const html = sortedMatches.map(place => {
+    const regex = new RegExp(this.value, 'gi');
+    const cityName = place.city.replace(regex, `<span class="hl">${this.value}</span>`);
+    const stateName = place.state.replace(regex, `<span class="hl">${this.value}</span>`);
+    return `
+      <li>
+        <span class="name">${cityName}, ${stateName}</span>
+        <span class="population">${numberWithCommas(place.population)}</span>
+      </li>
+    `;
+  }).join('');
+  suggestions.innerHTML = html;
+}
+
+const searchInput = document.querySelector('.search');
+const suggestions = document.querySelector('.suggestions');
+const loc = {lat: 0, long: 0};
+
+navigator.geolocation.getCurrentPosition(function(pos) {
+  loc.lat = pos.coords.latitude;
+  loc.long = pos.coords.longitude;
+});
+
+searchInput.addEventListener('change', displayMatches);
+searchInput.addEventListener('keyup', displayMatches);
+</script>
+  </body>
+</html>
