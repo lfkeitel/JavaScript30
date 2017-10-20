@@ -99,6 +99,23 @@
   </div>
 
 <script>
+  let lastChecked;
+
+  function handleEvent(e) {
+    if (e.shiftKey && this.checked) {
+      let doCheck = false;
+
+      items.forEach(item => {
+        if (item === this || item === lastChecked) doCheck = !doCheck;
+        if (doCheck) item.checked = true;
+      });
+    }
+
+    lastChecked = this;
+  }
+
+  const items = document.querySelectorAll('.inbox input[type="checkbox"]');
+  items.forEach(item => item.addEventListener('click', handleEvent));
 </script>
 </body>
 </html>
